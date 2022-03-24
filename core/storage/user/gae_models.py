@@ -2952,3 +2952,73 @@ class DeletedUsernameModel(base_models.BaseModel):
         """
         empty_dict: Dict[str, base_models.EXPORT_POLICY] = {}
         return dict(super(cls, cls).get_export_policy(), **empty_dict)
+
+
+class TransientCheckpointUrlModel(base_models.BaseModel):
+    """Model for storing a logged out user's progress through exploration
+    checkpoints.
+
+    This model stores the exploration id, last completed state name,
+    latest visited state name across a unique progress url id.
+    """
+
+    # The exploration id of the exploration for which the progress is
+    # being stored.
+    exploration_id = (
+        datastore_services.StringProperty(required=True, indexed=True)
+    )
+    # The checkpoint's state name that was last completed in the playthrough
+    # of the exploration.
+    last_completed_checkpoint_state_name = (
+        datastore_services.StringProperty(required=True, indexed=True)
+    )
+    # The checkpoint's state name that was visited latest in the playthrough
+    # of the exploration.
+    latest_visited_checkpoint_state_name = (
+        datastore_services.StringProperty(required=True, indexed=True)
+    )
+    # Version of the exploration model when the checkpoints progress
+    # was stored.latest_visited_checkpoint_state_name
+    last_completed_checkpoint_exp_version = (
+        datastore_services.IntegerProperty(required=True, indexed=True)
+    )
+
+    @staticmethod
+    def get_deletion_policy() -> base_models.DELETION_POLICY:
+        """Model doesn't contain any data directly corresponding to a user."""
+        return base_models.DELETION_POLICY.NOT_APPLICABLE
+
+    @staticmethod
+    def get_model_association_to_user(
+    ) -> base_models.MODEL_ASSOCIATION_TO_USER:
+        """Model does not contain user data."""
+        return base_models.MODEL_ASSOCIATION_TO_USER.NOT_CORRESPONDING_TO_USER
+
+    @classmethod
+    def get_export_policy(cls) -> Dict[str, base_models.EXPORT_POLICY]:
+        """Model doesn't contain any data directly corresponding to a user."""
+        return base_models.EXPORT_POLICY.NOT_APPLICABLE
+
+    @classmethod
+    def get_new_id(cls) -> str:
+        """Generates a unique ID for the progress url in the form of random
+        hash of 6 chars.
+
+        Returns:
+            new_id: str. ID of the new TransientCheckpointUrlModel instance.
+
+        Raises:
+            Exception. The ID generator for TransientCheckpointUrlModel is
+                producing too many collisions.
+        """
+
+        for _ in range(base_models.MAX_RETRIES):
+            new_id = utils.convert_to_hash(
+                str(utils.get_random_int(base_models.RAND_RANGE)),
+                6)
+            if not cls.get_by_id(new_id):
+                return new_id
+
+        raise Exception(
+            'The id generator for TransientCheckpointUrlModel is '
+            'producing too many collisions.')

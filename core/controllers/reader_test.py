@@ -2594,3 +2594,68 @@ class LearnerAnswerDetailsSubmissionHandlerTests(test_utils.GenericTestBase):
                     'answer': 'This is an answer.',
                     'answer_details': 'This is an answer details.',
                 }, csrf_token=csrf_token, expected_status_int=500)
+
+class TransientCheckpointUrlHandlerTests(test_utils.GenericTestBase):
+    """Tests for the transient checkpoint url handler."""
+
+    EXPLORATION_ID = 'exp_id1'
+    COMPLETED_STATE_NAME = 'state_name1'
+    VISITED_STATE_NAME = 'state_name2'
+    EXP_VERSION = 3
+
+    def setUp(self):
+        """Set up transient checkpoint url models in datastore
+        for use in testing."""
+        super(TransientCheckpointUrlHandlerTests, self).setUp()
+
+        self.progress_url_id = (
+            learner_progress_services.record_transient_checkpoint_url_progress(
+                self.EXPLORATION_ID,
+                self.COMPLETED_STATE_NAME,
+                self.VISITED_STATE_NAME,
+                self.EXP_VERSION
+            )
+        )
+
+    def test_get_transient_checkpoint_url(self):
+        json_response = self.get_json(
+            '%s/%s' % ('/progress', self.progress_url_id),
+        )
+
+        self.assertEqual(
+            self.progress_url_id, json_response['progress_url_id'])
+        self.assertEqual(
+            self.EXPLORATION_ID, json_response['exploration_id'])
+        self.assertEqual(
+            self.COMPLETED_STATE_NAME,
+            json_response['last_completed_checkpoint_state_name'])
+        self.assertEqual(
+            self.VISITED_STATE_NAME,
+            json_response['latest_visited_checkpoint_state_name'])
+        self.assertEqual(
+            self.EXP_VERSION,
+            json_response['last_completed_checkpoint_exp_version'])
+
+
+    def test_create_transient_checkpoint_url(self):
+
+        transient_checkpoint_url_model = {
+            'exploration_id': self.EXPLORATION_ID,
+            'last_completed_checkpoint_state_name': self.COMPLETED_STATE_NAME,
+            'latest_visited_checkpoint_state_name': self.VISITED_STATE_NAME,
+            'last_completed_checkpoint_exp_version': self.EXP_VERSION,
+        }
+
+        progress_url_id = (
+            learner_progress_services.record_transient_checkpoint_url_progress(
+                transient_checkpoint_url_model
+            )
+        )
+
+        self.assertEqual(
+            learner_progress_services.get_transient_checkpoint_url_progress(
+                progress_url_id
+            ),
+            transient_checkpoint_url_model
+        )  
+                

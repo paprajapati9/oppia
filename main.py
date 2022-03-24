@@ -899,7 +899,15 @@ URLS = [
     get_redirect_route(
         r'/topics_and_skills_dashboard/categorized_and_untriaged_skills_data',
         topics_and_skills_dashboard
-            .CategorizedAndUntriagedSkillsDataHandler)
+            .CategorizedAndUntriagedSkillsDataHandler),
+
+    get_redirect_route(
+        r'/progress/<unique_progress_id>',
+        reader.TransientCheckpointUrlHandler),
+
+    get_redirect_route(
+        r'/explorehandler/states_completed_by_logged_out_user/<exploration_id>',
+        reader.TransientCheckpointUrlHandler)
 ]
 
 # Adding redirects for topic landing pages.

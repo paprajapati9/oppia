@@ -2557,3 +2557,78 @@ class DeletedUsernameModelTests(test_utils.GenericTestBase):
         self.assertEqual(
             user_models.DeletedUsernameModel.get_deletion_policy(),
             base_models.DELETION_POLICY.NOT_APPLICABLE)
+
+class TransientCheckpointUrlModelTests(test_utils.GenericTestBase):
+    """Tests for TransientCheckpointUrlModel."""
+
+    EXPLORATION_ID = 'exp_id1'
+    COMPLETED_STATE_NAME = 'state_name1'
+    VISITED_STATE_NAME = 'state_name2'
+    EXP_VERSION = 3
+
+    def setUp(self):
+        """Set up transient checkpoint url models in datastore
+        for use in testing."""
+        super(TransientCheckpointUrlModelTests, self).setUp()
+
+        self.transient_checkpoint_url_model = (
+            user_models.TransientCheckpointUrlModel(
+                id='test_1',
+                exploration_id=self.EXPLORATION_ID,
+                last_completed_checkpoint_state_name=self.COMPLETED_STATE_NAME,
+                latest_visited_checkpoint_state_name=self.VISITED_STATE_NAME,
+                last_completed_checkpoint_exp_version=self.EXP_VERSION
+            )
+        )
+        self.transient_checkpoint_url_model.update_timestamps(
+            update_last_updated_time = False
+        )
+        self.transient_checkpoint_url_model.put()
+
+    def test_get_model_association_to_user(self) -> None:
+        self.assertEqual(
+            user_models.TransientCheckpointUrlModel.
+                get_model_association_to_user(),
+            base_models.MODEL_ASSOCIATION_TO_USER.NOT_CORRESPONDING_TO_USER)
+
+    def test_get_export_policy(self) -> None:
+        self.assertEqual(
+            user_models.TransientCheckpointUrlModel.get_export_policy(),
+            base_models.EXPORT_POLICY.NOT_APPLICABLE)
+
+    def test_get_deletion_policy(self):
+        self.assertEqual(
+            user_models.TransientCheckpointUrlModel.get_deletion_policy(),
+            base_models.DELETION_POLICY.NOT_APPLICABLE)
+
+    def test_raise_exception_by_mocking_collision(self):
+        """Tests get_new_id methods for raising
+        exception.
+        """
+        transient_checkpoint_url_model_cls = (
+            user_models.TransientCheckpointUrlModel
+        )
+
+        # Test get_new_id method.
+        with self.assertRaisesRegex(
+            Exception,
+            'New transient checkpoint url progress id generator is producing '
+            + 'too many collisions.'):
+            # Swap dependent method get_by_id to simulate collision every time.
+            with self.swap(
+                transient_checkpoint_url_model_cls, 'get_by_id',
+                types.MethodType(
+                    lambda x, y: True,
+                    transient_checkpoint_url_model_cls)):
+                transient_checkpoint_url_model_cls.get_new_id()
+
+    def test_get_transient_checkpoint_url_model(self):
+        transient_checkpoint_url_model_instance = (
+            user_models.TransientCheckpointUrlModel.get_by_id('test_1')
+        )
+        self.assertEqual(
+            transient_checkpoint_url_model_instance,
+            self.transient_checkpoint_url_model
+        )
+
+    

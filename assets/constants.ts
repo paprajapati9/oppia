@@ -6010,6 +6010,9 @@ export default {
   // A regular expression for allowed entity id's.
   "ENTITY_ID_REGEX": "^[a-zA-Z0-9-_]{1,12}$",
 
+  // A regular expression for allowed characters in checkpoints progress id's.
+  "CHECKPOINTS_PROGRESS_URL_ID_REGEX": "^[a-zA-Z0-9-_]{1,6}$",
+
   // A regular expression for allowed characters in Title field for Blog Post.
   "VALID_BLOG_POST_TITLE_REGEX": "^[a-zA-Z0-9][a-zA-Z0-9 ]+(-[a-zA-Z0-9]+)*$",
 

@@ -1274,3 +1274,97 @@ class LearnerAnswerDetailsSubmissionHandler(base.BaseHandler):
             entity_type, state_reference,
             interaction_id, answer, answer_details)
         self.render_json({})
+
+
+class TransientCheckpointUrlHandler(base.BaseHandler):
+    """Handles the request to fetch and save a transient checkpoint url."""
+
+    HANDLER_ARGS_SCHEMAS = {
+        'GET': {
+            'unique_progress_url_id': {
+                'schema': {
+                    'type': 'basestring',
+                    'validators': [{
+                        'id': 'is_regex_matched',
+                        'regex_pattern': (
+                            constants.CHECKPOINTS_PROGRESS_ID_REGEX
+                        )
+                    }]
+                }
+            }
+        },
+        'POST': {
+            'exploration_id': {
+                'schema': editor.SCHEMA_FOR_EXPLORATION_ID
+            },
+            'last_completed_checkpoint_state_name': {
+                'schema': {
+                    'type': 'basestring',
+                    'validators': [{
+                        'id': 'has_length_at_most',
+                        'max_value': constants.MAX_STATE_NAME_LENGTH
+                    }]
+                }
+            },
+            'latest_visited_checkpoint_state_name': {
+                'schema': {
+                    'type': 'basestring',
+                    'validators': [{
+                        'id': 'has_length_at_most',
+                        'max_value': constants.MAX_STATE_NAME_LENGTH
+                    }]
+                }
+            }
+        }
+    }
+
+    @acl_decorators.can_play_exploration
+    def get(self, progress_url_id):
+        """Handles GET requests."""
+        transient_checkpoint_url = (
+            learner_progress_services.get_transient_checkpoint_url_by_id(
+                progress_url_id))
+
+        if transient_checkpoint_url is None:
+            raise self.PageNotFoundException
+
+        self.values.update({
+            'exploration_id': transient_checkpoint_url.exploration_id,
+            'progress_url_id': progress_url_id,
+            'last_completed_checkpoint_state_name': (
+                transient_checkpoint_url.last_completed_checkpoint_state_name),
+            'latest_visited_checkpoint_state_name': (
+                transient_checkpoint_url.latest_visited_checkpoint_state_name),
+            'last_completed_checkpoint_exp_version': (
+                transient_checkpoint_url.last_completed_checkpoint_exp_version)
+        })
+        self.render_json(self.values)
+
+    @acl_decorators.can_play_exploration
+    def put(self, exploration_id):
+        """"Handles the PUT requests. Stores the progress made by a
+        logged out learner.
+        """
+
+        exploration_id = self.payload.get('exploration_id')
+        last_completed_checkpoint_state_name = (
+            self.payload.get('last_completed_checkpoint_state_name')
+        )
+        latest_visited_checkpoint_state_name = (
+            self.payload.get('latest_visited_checkpoint_state_name')
+        )
+        last_completed_checkpoint_exp_version = (
+            self.payload.get('last_completed_checkpoint_exp_version')
+        )
+
+        progress_url_id = (
+            learner_progress_services.record_transient_checkpoint_url_progress(
+                exploration_id,
+                last_completed_checkpoint_state_name,
+                latest_visited_checkpoint_state_name,
+                last_completed_checkpoint_exp_version
+            )
+        )
+        self.render_json({
+            'progressUrlId': progress_url_id
+        })

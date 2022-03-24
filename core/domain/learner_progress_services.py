@@ -2107,3 +2107,61 @@ def get_exploration_progress(user_id):
     return (
         learner_progress_in_explorations,
         number_of_nonexistent_explorations)
+
+def record_transient_checkpoint_url_progress(
+    exploration_id, last_completed_checkpoint_state_name,
+    latest_visited_checkpoint_state_name,
+    last_completed_checkpoint_exp_version):
+
+    """Stores logged out users progress through the checkpoints
+    in explorations.
+
+    Args:
+        exploration_id: str. The id of the exploration in progress.
+        last_completed_checkpoint_state_name: str. The name of the last
+            completed checkpoint state.
+        latest_visited_checkpoint_state_name: str. The name of the latest
+            visited checkpoint state.
+    """
+
+    progress_url_id = user_models.TransientCheckpointUrlModel.get_new_id()
+    transient_checkpoint_url_model = (
+        user_models.TransientCheckpointUrlModel(
+            progress_url_id,
+            exploration_id=exploration_id,
+            last_completed_checkpoint_state_name=(
+                last_completed_checkpoint_state_name),
+            latest_visited_checkpoint_state_name=(
+                latest_visited_checkpoint_state_name),
+            last_completed_checkpoint_exp_version=(
+                last_completed_checkpoint_exp_version)
+        )
+    )
+    transient_checkpoint_url_model.update_timestamps(
+        update_last_updated_time = False
+    )
+    transient_checkpoint_url_model.put()
+
+    return progress_url_id
+
+def get_transient_checkpoint_url_progress(
+    progress_url_id):
+
+    """Returns the checkpoints progress in explorations made by
+    logged out users.
+
+    Returns:
+        exploration_id: str. The id of the exploration in progress.
+        last_completed_checkpoint_state_name: str. The name of the last
+            completed checkpoint state.
+        latest_visited_checkpoint_state_name: str. The name of the latest
+            visited checkpoint state.
+    """
+
+    transient_checkpoint_url_model = (
+        user_models.TransientCheckpointUrlModel.get_by_id(
+            progress_url_id
+        )
+    )
+
+    return transient_checkpoint_url_model
